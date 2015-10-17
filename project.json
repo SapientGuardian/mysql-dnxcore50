@@ -1,0 +1,49 @@
+﻿{
+  "version": "1.0.0-alpha",
+  "description": "MySQL DNXCore50 Library",
+  "authors": [ "Oracle", "SapientGuardian" ],
+  "tags": [ "" ],
+  "projectUrl": "",
+  "licenseUrl": "",
+
+  "frameworks": {
+    "dnxcore50": {
+      "dependencies": {
+        "System.Collections": "4.0.10-beta-22816",
+        "System.Linq": "4.0.0-beta-22816",
+        "System.Threading": "4.0.10-beta-22816",
+        "Microsoft.CSharp": "4.0.0-beta-22816",
+        "System.Diagnostics.Debug": "4.0.11-beta-23405",
+        "System.Reflection.TypeExtensions": "4.0.1-beta-23326",
+        "System.Text.Encoding": "4.0.11-beta-23326",
+        "System.Text.Encoding.Extensions": "4.0.11-beta-23302",
+        "System.Runtime": "4.0.21-beta-23405",
+        "System.Runtime.Extensions": "4.0.11-beta-23405",
+        "System.Reflection": "4.1.0-beta-23225",
+        "System.Reflection.Primitives": "4.0.1-beta-23302",
+        "System.Reflection.Emit": "4.0.1-beta-23302",
+        "System.Reflection.Emit.ILGeneration": "4.0.1-beta-23302",
+        "System.Reflection.Extensions": "4.0.1-beta-23326",
+        "System.Globalization": "4.0.11-beta-23405",
+        "System.Data.Common": "4.0.1-beta-23405",
+        "System.Resources.ResourceManager": "4.0.1-beta-23405",
+        "System.Net.Sockets": "4.1.0-beta-23326",
+        "System.IO": "4.0.11-beta-23405",
+        "System.Security.Cryptography.Hashing.Algorithms": "4.0.0-beta-23302",
+        "System.Threading.Timer": "4.0.1-beta-23405",
+        "System.Threading.ThreadPool": "4.0.10-beta-23405",
+        "System.Diagnostics.Tracing": "4.0.21-beta-23302",
+        "System.Runtime.Serialization.Xml": "4.0.11-beta-23409",
+        "System.Text.RegularExpressions": "4.0.11-beta-23409",
+        "System.Runtime.InteropServices": "4.0.21-beta-23405",
+        "System.IO.FileSystem.Primitives": "4.0.1-beta-23409",
+        "System.Threading.Overlapped": "4.0.1-beta-23302",
+        "System.Runtime.Handles": "4.0.1-beta-23302",
+        "Microsoft.Win32.Primitives": "4.0.1-beta-23225",
+        "System.IO.FileSystem": "4.0.1-beta-23302",
+        "System.Net.Primitives": "4.0.11-beta-23302",
+        "System.Net.NameResolution": "4.0.0-beta-23225"
+      }
+    }
+  }
+}
