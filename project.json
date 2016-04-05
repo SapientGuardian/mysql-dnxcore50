@@ -1,10 +1,10 @@
 ﻿{
-  "version": "1.0.0-alpha",
-  "description": "MySQL DNXCore50 Library",
+  "version": "1.1.0-alpha",
+  "description": "Stripped down port of the MySQL client Library for .Net Core",
   "authors": [ "Oracle", "SapientGuardian" ],
-  "tags": [ "" ],
-  "projectUrl": "",
-  "licenseUrl": "",
+  "tags": [ "coreclr", "dnxcore50", "dnx", "mysql" ],
+  "projectUrl": "https://github.com/SapientGuardian/mysql-dnxcore50",
+  "licenseUrl": "http://www.gnu.org/licenses/old-licenses/gpl-2.0.html",
 
   "frameworks": {
     "dnxcore50": {
@@ -27,10 +27,10 @@
         "System.Globalization": "4.0.11-beta-23405",
         "System.Data.Common": "4.0.1-beta-23405",
         "System.Resources.ResourceManager": "4.0.1-beta-23405",
-        "System.Net.Sockets": "4.1.0-beta-23326",
+        "System.Net.Sockets": "4.1.0-beta-23516",
         "System.IO": "4.0.11-beta-23405",
-        "System.Security.Cryptography.Hashing.Algorithms": "4.0.0-beta-23302",
-        "System.Threading.Timer": "4.0.1-beta-23405",
+        "System.Security.Cryptography.Hashing.Algorithms": "4.0.0-beta-23225",
+        "System.Threading.Timer": "4.0.1-beta-23516",
         "System.Threading.ThreadPool": "4.0.10-beta-23405",
         "System.Diagnostics.Tracing": "4.0.21-beta-23302",
         "System.Runtime.Serialization.Xml": "4.0.11-beta-23409",

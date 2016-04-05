@@ -32,307 +32,299 @@ namespace MySql.Data.Common
     using System.Threading.Tasks;
 
     internal class MyNetworkStream : NetworkStream
-  {
-    /// <summary>
-    /// Wrapper around NetworkStream.
-    /// 
-    /// MyNetworkStream is equivalent to NetworkStream, except 
-    /// 1. It throws TimeoutException if read or write timeout occurs, instead 
-    /// of IOException, to match behavior of other streams (named pipe and 
-    /// shared memory). This property comes handy in TimedStream.
-    ///
-    /// 2. It implements workarounds for WSAEWOULDBLOCK errors, that can start 
-    /// occuring after stream has times out. For a discussion about the CLR bug,
-    /// refer to  http://tinyurl.com/lhgpyf. This error should never occur, as
-    /// we're not using asynchronous operations, but apparerntly it does occur
-    /// directly after timeout has expired.
-    /// The workaround is hinted in the URL above and implemented like this:
-    /// For each IO operation, if it throws WSAEWOULDBLOCK, we explicitely set
-    /// the socket to Blocking and retry the operation once again.
-    /// </summary>
-    const int MaxRetryCount = 2;
-    Socket socket;
-
-    public MyNetworkStream(Socket socket, bool ownsSocket)
-      : base(socket, ownsSocket)
     {
-      this.socket = socket;
-    }
+        /// <summary>
+        /// Wrapper around NetworkStream.
+        /// 
+        /// MyNetworkStream is equivalent to NetworkStream, except 
+        /// 1. It throws TimeoutException if read or write timeout occurs, instead 
+        /// of IOException, to match behavior of other streams (named pipe and 
+        /// shared memory). This property comes handy in TimedStream.
+        ///
+        /// 2. It implements workarounds for WSAEWOULDBLOCK errors, that can start 
+        /// occuring after stream has times out. For a discussion about the CLR bug,
+        /// refer to  http://tinyurl.com/lhgpyf. This error should never occur, as
+        /// we're not using asynchronous operations, but apparerntly it does occur
+        /// directly after timeout has expired.
+        /// The workaround is hinted in the URL above and implemented like this:
+        /// For each IO operation, if it throws WSAEWOULDBLOCK, we explicitely set
+        /// the socket to Blocking and retry the operation once again.
+        /// </summary>
+        const int MaxRetryCount = 2;
+        Socket socket;
 
-    bool IsTimeoutException(SocketException e)
-    {
+        public MyNetworkStream(Socket socket, bool ownsSocket)
+          : base(socket, ownsSocket)
+        {
+            this.socket = socket;
+        }
+
+        bool IsTimeoutException(SocketException e)
+        {
 #if CF
        return (e.NativeErrorCode == 10060);
 #else
-      return (e.SocketErrorCode == SocketError.TimedOut);
+            return (e.SocketErrorCode == SocketError.TimedOut);
 #endif
-    }
+        }
 
-    bool IsWouldBlockException(SocketException e)
-    {
+        bool IsWouldBlockException(SocketException e)
+        {
 #if CF
       return (e.NativeErrorCode == 10035);
 #else
-      return (e.SocketErrorCode == SocketError.WouldBlock);
+            return (e.SocketErrorCode == SocketError.WouldBlock);
 #endif
-    }
+        }
 
 
-    void HandleOrRethrowException(Exception e)
-    {
-      Exception currentException = e;
-      while (currentException != null)
-      {
-        if (currentException is SocketException)
+        void HandleOrRethrowException(Exception e)
         {
-          SocketException socketException = (SocketException)currentException;
-          if (IsWouldBlockException(socketException))
-          {
-            // Workaround  for WSAEWOULDBLOCK
-            socket.Blocking = true;
-            // return to give the caller possibility to retry the call
-            return;
-          }
-          else if (IsTimeoutException(socketException))
-          {
-            return;
-            //throw new TimeoutException(socketException.Message, e);
-          }
+            Exception currentException = e;
+            while (currentException != null)
+            {
+                if (currentException is SocketException)
+                {
+                    SocketException socketException = (SocketException)currentException;
+                    if (IsWouldBlockException(socketException))
+                    {
+                        // Workaround  for WSAEWOULDBLOCK
+                        socket.Blocking = true;
+                        // return to give the caller possibility to retry the call
+                        return;
+                    }
+                    else if (IsTimeoutException(socketException))
+                    {
+                        return;
+                        //throw new TimeoutException(socketException.Message, e);
+                    }
 
+                }
+                currentException = currentException.InnerException;
+            }
+            throw (e);
         }
-        currentException = currentException.InnerException;
-      }
-      throw (e);
-    }
 
 
-    public override int Read(byte[] buffer, int offset, int count)
-    {
-      int retry = 0;
-      Exception exception = null;
-      do
-      {
-        try
+        public override int Read(byte[] buffer, int offset, int count)
         {
-          return base.Read(buffer, offset, count);
+            int retry = 0;
+            Exception exception = null;
+            do
+            {
+                try
+                {
+                    return base.Read(buffer, offset, count);
+                }
+                catch (Exception e)
+                {
+                    exception = e;
+                    HandleOrRethrowException(e);
+                }
+            }
+            while (++retry < MaxRetryCount);
+            if (exception.GetBaseException() is SocketException
+              && IsTimeoutException((SocketException)exception.GetBaseException()))
+                throw new TimeoutException(exception.Message, exception);
+            throw exception;
         }
-        catch (Exception e)
-        {
-          exception = e;
-          HandleOrRethrowException(e);
-        }
-      }
-      while (++retry < MaxRetryCount);
-      if(exception.GetBaseException() is SocketException 
-        && IsTimeoutException((SocketException)exception.GetBaseException()))
-        throw new TimeoutException(exception.Message, exception);
-      throw exception;
-    }
 
-    public override int ReadByte()
-    {
-      int retry = 0;
-      Exception exception = null;
-      do
-      {
-        try
+        public override int ReadByte()
         {
-          return base.ReadByte();
+            int retry = 0;
+            Exception exception = null;
+            do
+            {
+                try
+                {
+                    return base.ReadByte();
+                }
+                catch (Exception e)
+                {
+                    exception = e;
+                    HandleOrRethrowException(e);
+                }
+            }
+            while (++retry < MaxRetryCount);
+            throw exception;
         }
-        catch (Exception e)
-        {
-          exception = e;
-          HandleOrRethrowException(e);
-        }
-      }
-      while (++retry < MaxRetryCount);
-      throw exception;
-    }
 
-    public override void Write(byte[] buffer, int offset, int count)
-    {
-      int retry = 0;
-      Exception exception = null;
-      do
-      {
-        try
+        public override void Write(byte[] buffer, int offset, int count)
         {
-          base.Write(buffer, offset, count);
-          return;
+            int retry = 0;
+            Exception exception = null;
+            do
+            {
+                try
+                {
+                    base.Write(buffer, offset, count);
+                    return;
+                }
+                catch (Exception e)
+                {
+                    exception = e;
+                    HandleOrRethrowException(e);
+                }
+            }
+            while (++retry < MaxRetryCount);
+            throw exception;
         }
-        catch (Exception e)
-        {
-          exception = e;
-          HandleOrRethrowException(e);
-        }
-      }
-      while (++retry < MaxRetryCount);
-      throw exception;
-    }
 
-    public override void Flush()
-    {
-      int retry = 0;
-      Exception exception = null;
-      do
-      {
-        try
+        public override void Flush()
         {
-          base.Flush();
-          return;
+            int retry = 0;
+            Exception exception = null;
+            do
+            {
+                try
+                {
+                    base.Flush();
+                    return;
+                }
+                catch (Exception e)
+                {
+                    exception = e;
+                    HandleOrRethrowException(e);
+                }
+            }
+            while (++retry < MaxRetryCount);
+            throw exception;
         }
-        catch (Exception e)
-        {
-          exception = e;
-          HandleOrRethrowException(e);
-        }
-      }
-      while (++retry < MaxRetryCount);
-      throw exception;
-    }
 
-    #region Create Code
+        #region Create Code
 
-    public static async Task<MyNetworkStream> CreateStream(MySqlConnectionStringBuilder settings, bool unix)
-    {
-      MyNetworkStream stream = null;
-      IPHostEntry ipHE = await GetHostEntry(settings.Server);
-            
-      foreach (IPAddress address in ipHE.AddressList)
-      {
-        try
+        public static async Task<MyNetworkStream> CreateStream(MySqlConnectionStringBuilder settings, bool unix)
         {
-          stream = CreateSocketStream(settings, address, unix);
-          if (stream != null) break;
-        }
-        catch (Exception ex)
-        {
-          SocketException socketException = ex as SocketException;
-          // if the exception is a ConnectionRefused then we eat it as we may have other address
-          // to attempt
-          if (socketException == null) throw;
+            MyNetworkStream stream = null;
+            IPHostEntry ipHE = await GetHostEntry(settings.Server);
+
+            foreach (IPAddress address in ipHE.AddressList)
+            {
+                try
+                {
+                    stream = CreateSocketStream(settings, address, unix);
+                    if (stream != null) break;
+                }
+                catch (Exception ex)
+                {
+                    SocketException socketException = ex as SocketException;
+                    // if the exception is a ConnectionRefused then we eat it as we may have other address
+                    // to attempt
+                    if (socketException == null) throw;
 #if !CF
-          if (socketException.SocketErrorCode != SocketError.ConnectionRefused) throw;
+                    if (socketException.SocketErrorCode != SocketError.ConnectionRefused) throw;
 #endif
+                }
+            }
+            return stream;
         }
-      }
-      return stream;
-    }
 
-    private static IPHostEntry ParseIPAddress(string hostname)
-    {
-      IPHostEntry ipHE = null;
+        private static IPHostEntry ParseIPAddress(string hostname)
+        {
+            IPHostEntry ipHE = null;
 #if !CF
-      IPAddress addr;
-      if (IPAddress.TryParse(hostname, out addr))
-      {
-        ipHE = new IPHostEntry();
-        ipHE.AddressList = new IPAddress[1];
-        ipHE.AddressList[0] = addr;
-      }
+            IPAddress addr;
+            if (IPAddress.TryParse(hostname, out addr))
+            {
+                ipHE = new IPHostEntry();
+                ipHE.AddressList = new IPAddress[1];
+                ipHE.AddressList[0] = addr;
+            }
 #endif
-      return ipHE;
-    }
+            return ipHE;
+        }
 
-    private static Task<IPHostEntry> GetHostEntry(string hostname)
-    {
-      IPHostEntry ipHE = ParseIPAddress(hostname);
-      if (ipHE != null) return Task.FromResult(ipHE);
-      
-      return Dns.GetHostEntryAsync(hostname);
-    }
+        private static Task<IPHostEntry> GetHostEntry(string hostname)
+        {
+            IPHostEntry ipHE = ParseIPAddress(hostname);
+            if (ipHE != null) return Task.FromResult(ipHE);
 
-
-    private static MyNetworkStream CreateSocketStream(MySqlConnectionStringBuilder settings, IPAddress ip, bool unix)
-    {
-      EndPoint endPoint;
+            return Dns.GetHostEntryAsync(hostname);
+        }
 
 
-        endPoint = new IPEndPoint(ip, (int)settings.Port);
-
-      Socket socket = unix ?
-          new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.IP) :
-          new Socket(ip.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-      if (settings.Keepalive > 0)
-      {
-        SetKeepAlive(socket, settings.Keepalive);
-      }
+        private static MyNetworkStream CreateSocketStream(MySqlConnectionStringBuilder settings, IPAddress ip, bool unix)
+        {
+            EndPoint endPoint;
 
 
-      IAsyncResult ias = socket.BeginConnect(endPoint, null, null);
-      if (!ias.AsyncWaitHandle.WaitOne((int)settings.ConnectionTimeout * 1000, false))
-      {
-        socket.Dispose();
-        return null;
-      }
-      try
-      {
-        socket.EndConnect(ias);
-      }
-      catch (Exception)
-      {
-        socket.Dispose();
-        throw;
-      }
-      MyNetworkStream stream = new MyNetworkStream(socket, true);
-      GC.SuppressFinalize(socket);
-      GC.SuppressFinalize(stream);
-      return stream;
-    }
+            endPoint = new IPEndPoint(ip, (int)settings.Port);
+
+            Socket socket = unix ?
+                new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.IP) :
+                new Socket(ip.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            if (settings.Keepalive > 0)
+            {
+                SetKeepAlive(socket, settings.Keepalive);
+            }
+
+
+            var connectTask = socket.ConnectAsync(endPoint);
+            if (!connectTask.Wait((int)settings.ConnectionTimeout * 1000))
+            {
+                socket.Dispose();
+                return null;
+            }
+
+            MyNetworkStream stream = new MyNetworkStream(socket, true);
+            GC.SuppressFinalize(socket);
+            GC.SuppressFinalize(stream);
+            return stream;
+        }
 
 
 
-    /// <summary>
-    /// Set keepalive + timeout on socket.
-    /// </summary>
-    /// <param name="s">socket</param>
-    /// <param name="time">keepalive timeout, in seconds</param>
-    private static void SetKeepAlive(Socket s, uint time)
-    {
+        /// <summary>
+        /// Set keepalive + timeout on socket.
+        /// </summary>
+        /// <param name="s">socket</param>
+        /// <param name="time">keepalive timeout, in seconds</param>
+        private static void SetKeepAlive(Socket s, uint time)
+        {
 
 #if !CF
-      uint on = 1;
-      uint interval = 1000; // default interval = 1 sec
+            uint on = 1;
+            uint interval = 1000; // default interval = 1 sec
 
-      uint timeMilliseconds;
-      if (time > UInt32.MaxValue / 1000)
-        timeMilliseconds = UInt32.MaxValue;
-      else
-        timeMilliseconds = time * 1000;
+            uint timeMilliseconds;
+            if (time > UInt32.MaxValue / 1000)
+                timeMilliseconds = UInt32.MaxValue;
+            else
+                timeMilliseconds = time * 1000;
 
-      // Use Socket.IOControl to implement equivalent of
-      // WSAIoctl with  SOL_KEEPALIVE_VALS 
+            // Use Socket.IOControl to implement equivalent of
+            // WSAIoctl with  SOL_KEEPALIVE_VALS 
 
-      // the native structure passed to WSAIoctl is
-      //struct tcp_keepalive {
-      //    ULONG onoff;
-      //    ULONG keepalivetime;
-      //    ULONG keepaliveinterval;
-      //};
-      // marshal the equivalent of the native structure into a byte array
+            // the native structure passed to WSAIoctl is
+            //struct tcp_keepalive {
+            //    ULONG onoff;
+            //    ULONG keepalivetime;
+            //    ULONG keepaliveinterval;
+            //};
+            // marshal the equivalent of the native structure into a byte array
 
-      byte[] inOptionValues = new byte[12];
-      BitConverter.GetBytes(on).CopyTo(inOptionValues, 0);
-      BitConverter.GetBytes(timeMilliseconds).CopyTo(inOptionValues, 4);
-      BitConverter.GetBytes(interval).CopyTo(inOptionValues, 8);
-      try
-      {
-        // call WSAIoctl via IOControl
-        s.IOControl(IOControlCode.KeepAliveValues, inOptionValues, null);
-        return;
-      }
-      catch (NotImplementedException)
-      {
-        // Mono throws not implemented currently
-      }
+            byte[] inOptionValues = new byte[12];
+            BitConverter.GetBytes(on).CopyTo(inOptionValues, 0);
+            BitConverter.GetBytes(timeMilliseconds).CopyTo(inOptionValues, 4);
+            BitConverter.GetBytes(interval).CopyTo(inOptionValues, 8);
+            try
+            {
+                // call WSAIoctl via IOControl
+                s.IOControl(IOControlCode.KeepAliveValues, inOptionValues, null);
+                return;
+            }
+            catch (NotImplementedException)
+            {
+                // Mono throws not implemented currently
+            }
 #endif
-      // Fallback if Socket.IOControl is not available ( Compact Framework )
-      // or not implemented ( Mono ). Keepalive option will still be set, but
-      // with timeout is kept default.
-      s.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, 1);
+            // Fallback if Socket.IOControl is not available ( Compact Framework )
+            // or not implemented ( Mono ). Keepalive option will still be set, but
+            // with timeout is kept default.
+            s.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, 1);
+        }
+
+        #endregion
+
     }
-
-    #endregion
-
-  }
 }
