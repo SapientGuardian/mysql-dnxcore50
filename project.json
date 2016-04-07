@@ -1,18 +1,17 @@
-﻿{
-  "version": "1.2.0-alpha",
+{
+  "version": "1.2.1-alpha",
   "description": "Stripped down port of the MySQL client Library for .Net Core",
   "authors": [ "Oracle", "SapientGuardian" ],
   "tags": [ "coreclr", "dnxcore50", "dnx", "mysql" ],
   "projectUrl": "https://github.com/SapientGuardian/mysql-dnxcore50",
   "licenseUrl": "http://www.gnu.org/licenses/old-licenses/gpl-2.0.html",
-
   "frameworks": {
     "dnxcore50": {
       "dependencies": {
         "System.Collections": "4.0.10-beta-22816",
         "System.Linq": "4.0.0-beta-22816",
-        "System.Threading": "4.0.10-beta-22816",
-        "Microsoft.CSharp": "4.0.0-beta-22816",
+        "System.Threading": "4.0.11-beta-23516",
+        "Microsoft.CSharp": "4.0.1-beta-23516",
         "System.Diagnostics.Debug": "4.0.11-beta-23405",
         "System.Reflection.TypeExtensions": "4.0.1-beta-23326",
         "System.Text.Encoding": "4.0.11-beta-23326",
@@ -29,9 +28,9 @@
         "System.Resources.ResourceManager": "4.0.1-beta-23405",
         "System.Net.Sockets": "4.1.0-beta-23516",
         "System.IO": "4.0.11-beta-23405",
-        "System.Security.Cryptography.Hashing.Algorithms": "4.0.0-beta-23225",
+        "System.Security.Cryptography.Algorithms": "4.0.0-beta-23516",
         "System.Threading.Timer": "4.0.1-beta-23516",
-        "System.Threading.ThreadPool": "4.0.10-beta-23405",
+        "System.Threading.ThreadPool": "4.0.10-beta-23516",
         "System.Diagnostics.Tracing": "4.0.21-beta-23302",
         "System.Runtime.Serialization.Xml": "4.0.11-beta-23409",
         "System.Text.RegularExpressions": "4.0.11-beta-23409",
