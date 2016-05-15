@@ -1,4 +1,6 @@
-# mysql-dnxcore50
+# This repo is no longer maintained! Please use https://github.com/SapientGuardian/mysql-connector-net-netstandard1.5 instead.
+
+## mysql-dnxcore50
 This is a barely-tested, stripped-down version of the MySQL Connector/Net 6.9.7 library for DNXCore50.
 
 I've removed tons of Windows-specific functionality, replication, localization, transactions, etc. The following basic scenario works:
